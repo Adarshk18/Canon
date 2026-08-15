@@ -1,8 +1,10 @@
 # Canon
 
-**Governed project decision memory for AI coding agents.**
+**Canon remembers the decisions your repo already made — and makes Claude Code and Cursor follow them automatically.**
 
-Canon is a local-first CLI that sits between coding agents (Claude Code, Cursor, and others) and a project's institutional knowledge. It stops agents and new teammates from re-adopting rejected approaches, inventing conventions, or re-asking questions that were already settled.
+Governed project decision memory for AI coding agents.
+
+Canon is a local-first CLI that sits between coding agents (Claude Code and Cursor first) and a project's institutional knowledge. It stops agents and new teammates from re-adopting rejected approaches, inventing conventions, or re-asking questions that were already settled.
 
 It is not a chatbot, not another coding agent, not generic RAG, and not a website-first knowledge base. It is the living, agent-native layer for project decisions. It complements `CLAUDE.md`, `AGENTS.md`, and ADRs — it does not replace them.
 
@@ -33,23 +35,29 @@ Canon mines recent merged PRs (or Git history) and proposes candidate decisions.
 Requires Python 3.11 or newer and Git.
 
 ```bash
-pip install .
+pip install git+https://github.com/Adarshk18/Canon.git
 ```
 
-or, from a checkout:
+From a local checkout (development):
 
 ```bash
 python -m pip install -e ".[dev]"
 ```
 
-The product name is **Canon**. The PyPI distribution name is `canon-memory` because `canon` is already taken by an unrelated 2018 package. The CLI command is `canon`.
+The product and CLI are **Canon**. The install name is `canon-memory` because `canon` is taken on PyPI by an unrelated package. There is no PyPI release yet; install from this GitHub repo.
 
 ```bash
 canon --help
 canon --version
 ```
 
-Do not publish to PyPI until you have explicitly approved a release.
+If `canon` is not recognized (common on Windows user installs):
+
+```bash
+python -m canon --version
+```
+
+Add your Python `Scripts` folder to PATH, or keep using `python -m canon`.
 
 ## Quickstart
 
@@ -61,7 +69,9 @@ canon approve 1
 canon inject-preview
 ```
 
-Then start Claude Code or Cursor in the same repository. The agent should see the confirmed decision without you running `canon query`.
+Then start **Claude Code** or a **new Cursor Agent chat** in the same repository. The agent should see the confirmed decision without you running `canon query`.
+
+V1 does not auto-inject into ChatGPT or standalone Grok. Those tools can only see Canon if you attach `.canon/injection.md`.
 
 ## Claude Code integration
 
@@ -184,7 +194,7 @@ Defaults:
 | `injection.max_chars` | 4000 | Hard cap on injection characters |
 | `injection.max_tokens` | 1000 | Estimated token cap (`chars / 4`) |
 | `mining.lookback_prs` | 20 | Merged PRs to inspect |
-| `mining.lookback_commits` | 40 | Commits to inspect when GitHub is unavailable |
+| `mining.lookback_commits` | 80 | Commits to inspect when GitHub is unavailable |
 | `mining.min_score` | 6 | Conservative suggestion threshold |
 | `privacy.telemetry` | false | Local event log only, off by default |
 
@@ -196,7 +206,8 @@ Copy [.env.example](.env.example) if you need environment overrides. Never commi
 | --- | --- |
 | `not a Canon project` | Run `canon init` inside a Git repository. |
 | `GitHub CLI is installed, but you are not authenticated` | Run `gh auth login`, then `canon suggest`. |
-| No candidates | Expected. Canon prefers precision over recall. |
+| `canon` is not recognized | Use `python -m canon ...` or add Python `Scripts` to PATH. |
+| No candidates | Expected on mechanical/UI-only history. Product/policy and stack choices should appear. |
 | Claude session has no decisions | Run `canon doctor`. Confirm `canon` is on `PATH`. Start a new session. |
 | Cursor ignores a new decision | Start a new Agent chat after `canon approve`. |
 | Offline | `list`, `status`, and `inject-preview` work without a network. `suggest` falls back to Git history. |

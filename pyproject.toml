@@ -41,9 +41,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/canon-memory/canon"
-Documentation = "https://github.com/canon-memory/canon#readme"
-Issues = "https://github.com/canon-memory/canon/issues"
+Homepage = "https://github.com/Adarshk18/Canon"
+Documentation = "https://github.com/Adarshk18/Canon#readme"
+Issues = "https://github.com/Adarshk18/Canon/issues"
 
 [project.scripts]
 canon = "canon.cli.app:main"
