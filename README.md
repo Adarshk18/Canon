@@ -244,7 +244,7 @@ The domain model is isolated from SQLite so those can be added later without rew
 
 ## Historical name
 
-An earlier plan used the working name DecisionVault. The product is Canon. That historical plan is archived under `docs/historical/` and is not user-facing.
+An earlier plan used the working name DecisionVault. The product is Canon.
 
 ## License
 

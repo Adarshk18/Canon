@@ -1,7 +1,6 @@
 # V1 scope traceability
 
-Source: DecisionVault Product & Build Plan v1.0 (Aug 2026), archived at
-`docs/historical/DecisionVault_SaaS_Plan.pdf`. The shipping product is Canon.
+Source: the original product plan (Aug 2026). The shipping product is Canon.
 
 | Requirement | Implementation | Tests | Status |
 | --- | --- | --- | --- |

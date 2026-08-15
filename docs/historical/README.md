@@ -1,7 +1,7 @@
-# Historical source plan
+# Historical notes
 
-The files in this directory are the pre-rename product plan. The working
-name was DecisionVault. The shipping product is **Canon**.
+An earlier plan used the working name DecisionVault. The shipping product
+is **Canon**. Do not copy that working name into the CLI, UI, package
+metadata, or user-facing documentation.
 
-Do not copy that working name into the CLI, UI, package metadata, or
-user-facing documentation.
+The original plan files are local-only and are not in this repository.

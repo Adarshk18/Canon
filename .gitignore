@@ -28,6 +28,12 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Local-only source plans (not for the public repo)
+DecisionVault_SaaS_Plan.pdf
+canon_plan.txt
+docs/historical/DecisionVault_SaaS_Plan.pdf
+docs/historical/canon_plan.txt
+
 # Canon local state (this repo and dogfood)
 .canon/canon.db
 .canon/canon.db-wal
