@@ -91,7 +91,17 @@ def mine_candidates(
     for commit in commits:
         result.inspected += 1
         if commit.is_merge and not commit.subject.lower().startswith(
-            ("switch", "migrate", "replace", "adopt", "use ", "breaking")
+            (
+                "switch",
+                "migrate",
+                "replace",
+                "adopt",
+                "use ",
+                "breaking",
+                "drop",
+                "rename",
+                "restore",
+            )
         ):
             result.skipped += 1
             continue

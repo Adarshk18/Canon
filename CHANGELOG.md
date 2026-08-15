@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 — 2026-08-15
+
+- Mine product/policy decisions (drop a surface, rename A→B, model fallback, show-only constraints)
+- Do not treat every `rename` or `fix(ui)` as a decision
+- Inspect 80 recent commits by default (was 40)
+
 ## 1.0.0 — 2026-08-15
 
 First shippable Canon V1.

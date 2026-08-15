@@ -21,6 +21,17 @@ def extract_title(raw_title: str, category: str | None) -> str:
     instead = re.search(r"(?i)use (.+?) instead of (.+)", text)
     if instead:
         return normalize_title(f"Use {instead.group(1).strip()} instead of {instead.group(2).strip()}")
+    renamed = re.search(r"(?i)rename\s+(.+?)\s+to\s+(.+?)(?:\s+end-to-end)?$", text)
+    if renamed:
+        old = renamed.group(1).strip().rstrip(".")
+        new = renamed.group(2).strip().rstrip(".")
+        return normalize_title(f"Use the name {new} instead of {old}")
+    dropped = re.search(r"(?i)drop(?:ped|ping)?\s+(.+?)(?:,| and |$)", text)
+    if dropped:
+        return normalize_title(f"Do not keep {dropped.group(1).strip().rstrip('.')}")
+    only = re.search(r"(?i)show only\s+(.+)", text)
+    if only:
+        return normalize_title(f"Show only {only.group(1).strip().rstrip('.')}")
     if category and not text.lower().startswith("use "):
         return normalize_title(text)
     return normalize_title(text)

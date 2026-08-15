@@ -41,3 +41,71 @@ def test_extract_title_from_switch() -> None:
 def test_extract_title_keeps_version_numbers() -> None:
     title = extract_title("feat(auth): switch to OAuth 2.1 instead of custom passwords", "auth")
     assert "2.1" in title
+
+
+def test_product_policy_commits_score() -> None:
+    drop = score_change(
+        title="feat(product): drop user analytics pages, restore four-agent landing",
+        body="",
+        files=("src/app/analytics/page.tsx", "src/app/page.tsx"),
+        is_pr=False,
+    )
+    rename = score_change(
+        title="feat(debrief): rename Rejection Debrief to Interview Debrief end-to-end",
+        body="",
+        files=("src/debrief/title.ts",),
+        is_pr=False,
+    )
+    model = score_change(
+        title="fix(ai): DeepSeek text path uses v4-flash + thinking disabled",
+        body="",
+        files=("src/ai/deepseek.ts",),
+        is_pr=False,
+    )
+    only = score_change(
+        title="fix(pricing): show only 3 moat features and 4 agents",
+        body="",
+        files=("src/pricing/moat.ts",),
+        is_pr=False,
+    )
+    assert drop.value >= 6 and not drop.noise
+    assert rename.value >= 6 and not rename.noise
+    assert model.value >= 6 and not model.noise
+    assert only.value >= 6 and not only.noise
+
+
+def test_ui_polish_and_copy_tweaks_stay_filtered() -> None:
+    ui = score_change(
+        title="fix(ui): side-view robot runs in place on every loading screen",
+        body="",
+        files=("src/components/Robot.tsx",),
+        is_pr=False,
+    )
+    copy = score_change(
+        title="feat(notifications): richer popup copy for email-detected reject/offer",
+        body="",
+        files=("src/notifications/copy.ts",),
+        is_pr=False,
+    )
+    navbar = score_change(
+        title="feat(landing): show Pricing in navbar after Features",
+        body="",
+        files=("src/landing/nav.tsx",),
+        is_pr=False,
+    )
+    assert ui.value < 6 or ui.noise
+    assert copy.value < 6 or copy.noise
+    assert navbar.value < 6 or navbar.noise
+
+
+def test_extract_product_titles() -> None:
+    dropped = extract_title(
+        "feat(product): drop user analytics pages, restore four-agent landing",
+        "product",
+    )
+    renamed = extract_title(
+        "feat(debrief): rename Rejection Debrief to Interview Debrief end-to-end",
+        "product",
+    )
+    assert dropped.lower().startswith("do not keep")
+    assert "interview debrief" in renamed.lower()

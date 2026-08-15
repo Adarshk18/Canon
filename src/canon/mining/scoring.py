@@ -20,9 +20,23 @@ DECISION_PATTERNS = (
     re.compile(r"(?i)\bwe will use\b"),
     re.compile(r"(?i)\bstandardize on\b"),
     re.compile(r"(?i)\bchose to\b"),
-    re.compile(r"(?i)\bprefer(?:ring)?\b"),
+    re.compile(r"(?i)\bprefer(?:ring)?\s+(to use|using)\b"),
     re.compile(r"(?i)\bdrop(?:ped|ping)? support\b"),
     re.compile(r"(?i)\brequire[sd]?\b.+\binstead\b"),
+    # Product / policy decisions common in app repos (not stack migrations).
+    re.compile(r"(?i)\bdrop(?:ped|ping)?\b.+\b(pages?|feature|flow|agent|analytics)\b"),
+    re.compile(r"(?i)\brestore\b.+\b(landing|flow|cta|signup|login|pricing|agent)\b"),
+    re.compile(r"(?i)\brename\b.+\bto\b"),
+    re.compile(r"(?i)\bshow only\b"),
+    re.compile(r"(?i)\bnever hang\b"),
+    re.compile(r"(?i)\bstop (ai|invent|inventing|hallucinat)"),
+    re.compile(r"(?i)\breject\b.+\bas (questions?|garbage|invalid)\b"),
+    re.compile(r"(?i)\bthinking[- ](off|disabled)\b"),
+    re.compile(r"(?i)\bskip second (llm|model|call)\b"),
+    re.compile(r"(?i)\bhard timeouts?\b"),
+    re.compile(r"(?i)\bsingle cta\b"),
+    re.compile(r"(?i)\bhonest pricing\b"),
+    re.compile(r"(?i)\buses?\b.+\b(fallback|v\d|flash|deepseek|openai|claude)\b"),
 )
 
 NOISE_PATTERNS = (
@@ -42,9 +56,13 @@ NOISE_PATTERNS = (
     re.compile(r"(?i)\bpackage-lock\b"),
     re.compile(r"(?i)\byarn\.lock\b"),
     re.compile(r"(?i)\bpnpm-lock\b"),
-    re.compile(r"(?i)\brename(d|s)?\b"),
+    re.compile(r"(?i)\brename[sd]?\s+(this\s+)?(file|variable|function|class|import|symbol)\b"),
     re.compile(r"(?i)\bwip\b"),
     re.compile(r"(?i)^merge (pull request|branch)\b"),
+    re.compile(r"(?i)^(fix|feat)\(ui\):"),
+    re.compile(r"(?i)\bbutton label\b"),
+    re.compile(r"(?i)\bricher popup copy\b"),
+    re.compile(r"(?i)\buncramp\b"),
 )
 
 CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -97,6 +115,25 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     "compatibility": ("compat", "breaking", "semver", "deprecat"),
     "frontend": ("react", "vue", "svelte", "next.js", "css"),
     "tooling": ("typescript", "eslint config", "bundler", "webpack", "vite"),
+    "product": (
+        "landing",
+        "pricing",
+        "onboarding",
+        "debrief",
+        "analytics",
+        "quota",
+        "cta",
+        "retention",
+    ),
+    "ai": (
+        "deepseek",
+        "openai",
+        "anthropic",
+        "llm",
+        "thinking",
+        "v4-flash",
+        "model fallback",
+    ),
 }
 
 PATH_HINTS: dict[str, tuple[str, ...]] = {
@@ -181,7 +218,8 @@ def score_change(
         result.value -= 3
         result.reasons.append("Test-only change")
 
-    if any(pattern.search(title) or pattern.search(body) for pattern in DECISION_PATTERNS):
+    decided = any(pattern.search(title) or pattern.search(body) for pattern in DECISION_PATTERNS)
+    if decided:
         result.value += 4
         result.reasons.append("Explicit decision language")
 
@@ -212,7 +250,10 @@ def score_change(
     if best_category and best_hits:
         result.category = best_category
         result.tags.append(best_category)
-        result.value += min(3, best_hits)
+        bonus = min(3, best_hits)
+        if decided and bonus < 2:
+            bonus = 2
+        result.value += bonus
         result.reasons.append(f"Matches {best_category} signals")
 
     if result.value < 0:
