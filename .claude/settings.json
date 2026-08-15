@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "canon",
+            "args": [
+              "inject",
+              "--for-hook"
+            ],
+            "timeout": 15,
+            "statusMessage": "Loading Canon project decisions"
+          }
+        ]
+      }
+    ]
+  }
+}

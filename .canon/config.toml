@@ -1,0 +1,19 @@
+# Canon project configuration
+schema_version = 1
+
+[injection]
+max_decisions = 12
+max_chars = 4000
+max_tokens = 1000
+
+[mining]
+lookback_prs = 20
+lookback_commits = 40
+min_score = 6
+
+[integrations]
+claude = true
+cursor = true
+
+[privacy]
+telemetry = false

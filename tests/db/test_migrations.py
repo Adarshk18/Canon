@@ -1,0 +1,43 @@
+from __future__ import annotations
+
+import sqlite3
+from pathlib import Path
+
+from canon.db.migrations import apply_migrations, current_version
+from canon.db.store import Store
+
+
+def test_fresh_install_applies_v1(tmp_path: Path) -> None:
+    store = Store(tmp_path / "canon.db")
+    assert store.schema_version() == 1
+    store.close()
+
+
+def test_existing_database_is_idempotent(tmp_path: Path) -> None:
+    path = tmp_path / "canon.db"
+    first = Store(path)
+    first.close()
+    second = Store(path)
+    assert second.schema_version() == 1
+    second.close()
+
+
+def test_corrupt_database_is_detected(tmp_path: Path) -> None:
+    path = tmp_path / "canon.db"
+    store = Store(path)
+    store.close()
+    path.write_bytes(b"not a sqlite database")
+    try:
+        Store(path)
+    except Exception as exc:
+        assert "database" in str(exc).lower() or "sqlite" in str(exc).lower()
+
+
+def test_apply_on_empty_connection(tmp_path: Path) -> None:
+    path = tmp_path / "empty.db"
+    conn = sqlite3.connect(path)
+    assert current_version(conn) == 0
+    applied = apply_migrations(conn)
+    assert applied == [1]
+    assert current_version(conn) == 1
+    conn.close()

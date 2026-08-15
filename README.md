@@ -1,0 +1,240 @@
+# Canon
+
+**Governed project decision memory for AI coding agents.**
+
+Canon is a local-first CLI that sits between coding agents (Claude Code, Cursor, and others) and a project's institutional knowledge. It stops agents and new teammates from re-adopting rejected approaches, inventing conventions, or re-asking questions that were already settled.
+
+It is not a chatbot, not another coding agent, not generic RAG, and not a website-first knowledge base. It is the living, agent-native layer for project decisions. It complements `CLAUDE.md`, `AGENTS.md`, and ADRs — it does not replace them.
+
+```text
+start coding agent
+        ↓
+Canon automatically loads relevant active decisions
+        ↓
+agent receives them
+```
+
+## Why it exists
+
+Static files go stale. Agents forget last month's review thread. Asking people to stop mid-sprint and write an ADR does not survive week three.
+
+Canon mines recent merged PRs (or Git history) and proposes candidate decisions. A human only approves or rejects. Confirmed decisions are injected automatically at the start of the next agent session. Old decisions are superseded, never silently deleted.
+
+## How it works
+
+1. `canon init` wires local storage and agent integrations.
+2. `canon suggest` reads recent merged PRs or commits and proposes conservative candidates.
+3. You approve or reject. That interaction should take seconds, not a writing session.
+4. On the next Claude Code session, a SessionStart hook injects relevant active decisions.
+5. Cursor reads an always-apply project rule that points at the generated snapshot.
+
+## Installation
+
+Requires Python 3.11 or newer and Git.
+
+```bash
+pip install .
+```
+
+or, from a checkout:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+The product name is **Canon**. The PyPI distribution name is `canon-memory` because `canon` is already taken by an unrelated 2018 package. The CLI command is `canon`.
+
+```bash
+canon --help
+canon --version
+```
+
+Do not publish to PyPI until you have explicitly approved a release.
+
+## Quickstart
+
+```bash
+cd my-project
+canon init
+canon suggest
+canon approve 1
+canon inject-preview
+```
+
+Then start Claude Code or Cursor in the same repository. The agent should see the confirmed decision without you running `canon query`.
+
+## Claude Code integration
+
+`canon init` installs an official [SessionStart](https://code.claude.com/docs/en/hooks) command hook in `.claude/settings.json` (exec form, no shell):
+
+```json
+{
+  "type": "command",
+  "command": "canon",
+  "args": ["inject", "--for-hook"],
+  "timeout": 15
+}
+```
+
+Claude Code injects the hook's `additionalContext` at session start, resume, clear, compact, and fork. Output stays under the 10,000 character hook cap.
+
+`canon init` also writes a small managed rule at `.claude/rules/canon.md`. It does not rewrite your `CLAUDE.md`.
+
+Inspect: `canon doctor`  
+Disable: `canon uninstall`  
+Troubleshoot: confirm `canon` is on `PATH` inside the Claude Code environment.
+
+## Cursor integration
+
+Cursor has no session-start hook. Canon uses the officially supported [project rules](https://cursor.com/docs/rules) mechanism:
+
+- `.cursor/rules/canon.mdc` with `alwaysApply: true`
+- `@.canon/injection.md` referenced from that rule
+- `.canon/injection.md` regenerated on `init`, `approve`, `reject`, and `suggest`
+
+Limitation: Cursor will not re-read a changed snapshot until a new Agent session (or a rule reload). Approve a decision, then start a new chat. This is a Cursor platform limitation, not a missing Canon command.
+
+## CLI commands
+
+| Command | Purpose |
+| --- | --- |
+| `canon init` | Create local storage, schema, and agent wiring. Idempotent. |
+| `canon status` | Project, database, GitHub, and integration status. |
+| `canon suggest` | Mine recent PRs/commits for conservative candidates. |
+| `canon approve [id]` | Candidate → active. May supersede an older decision. |
+| `canon reject <id>` | Candidate → rejected. Record is kept. |
+| `canon list` | List decisions. `--active`, `--superseded`, `--rejected`, `--all`, `--tag`. |
+| `canon show <id>` | Full body and provenance. |
+| `canon inject-preview` | Exactly what an agent would receive. |
+| `canon doctor` | Environment and integration checks. |
+| `canon config` | Show or set project configuration. |
+| `canon export` | Portable JSON of stored decisions. |
+| `canon import` | Validated import. |
+| `canon uninstall` | Remove managed integrations. History is kept unless `--purge-data`. |
+| `canon version` | Print the version. |
+
+Most commands accept `--json`. Debug with `--debug` or `CANON_DEBUG=1`.
+
+Exit codes: `0` success, `1` application error, `2` invalid usage.
+
+## Decision lifecycle
+
+```text
+candidate  →  active
+candidate  →  rejected
+active     →  superseded
+```
+
+Rejected and superseded records stay in SQLite. Injection uses **active** decisions only.
+
+```text
+Decision #42
+Status: SUPERSEDED
+Superseded by: #57
+```
+
+## Provenance
+
+Every suggested and approved decision records what Canon actually knows:
+
+- source PR or commit
+- source repository
+- source date
+- confirmation date and confirmer
+
+If a field is unavailable, Canon says so. It never invents PR numbers, hashes, authors, dates, or URLs.
+
+## Privacy
+
+The default is local and private. No account is required.
+
+- SQLite, decision history, and injected context stay on disk.
+- Network is used only for optional GitHub PR metadata.
+- Telemetry is **off** unless you set `CANON_TELEMETRY=1`, and even then V1 only appends local events to `.canon/telemetry.jsonl`.
+
+See [PRIVACY.md](PRIVACY.md).
+
+## Security
+
+Canon treats commit messages, PR titles, PR bodies, filenames, and API responses as untrusted data. They are never executed and never treated as instructions. Git and `gh` run with argument lists, not a shell. SQL is parameterized.
+
+See [SECURITY.md](SECURITY.md).
+
+## Configuration
+
+Precedence:
+
+```text
+CLI arguments
+    ↓
+environment variables
+    ↓
+project config (.canon/config.toml)
+    ↓
+user config (~/.canon/config.toml)
+    ↓
+defaults
+```
+
+Defaults:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `injection.max_decisions` | 12 | Hard cap on injected decisions |
+| `injection.max_chars` | 4000 | Hard cap on injection characters |
+| `injection.max_tokens` | 1000 | Estimated token cap (`chars / 4`) |
+| `mining.lookback_prs` | 20 | Merged PRs to inspect |
+| `mining.lookback_commits` | 40 | Commits to inspect when GitHub is unavailable |
+| `mining.min_score` | 6 | Conservative suggestion threshold |
+| `privacy.telemetry` | false | Local event log only, off by default |
+
+Copy [.env.example](.env.example) if you need environment overrides. Never commit `.env`.
+
+## Troubleshooting
+
+| Symptom | What to do |
+| --- | --- |
+| `not a Canon project` | Run `canon init` inside a Git repository. |
+| `GitHub CLI is installed, but you are not authenticated` | Run `gh auth login`, then `canon suggest`. |
+| No candidates | Expected. Canon prefers precision over recall. |
+| Claude session has no decisions | Run `canon doctor`. Confirm `canon` is on `PATH`. Start a new session. |
+| Cursor ignores a new decision | Start a new Agent chat after `canon approve`. |
+| Offline | `list`, `status`, and `inject-preview` work without a network. `suggest` falls back to Git history. |
+
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+```bash
+python -m pip install -e ".[dev]"
+pytest
+ruff check src tests
+mypy
+python -m build
+```
+
+## Testing
+
+`pytest` covers decision lifecycle, supersession, mining filters, injection budget, CLI commands, path traversal, SQL injection, command injection, and prompt-injection-style repository content.
+
+## Roadmap / deferred features
+
+Intentionally **not** in V1, matching the source product plan:
+
+- Slack or Notion connectors
+- Daily multi-project drift engine
+- Rich team dashboard
+- Deep MCP query interface
+- Enterprise self-host packaging
+- Organization management and SSO
+- Billing and cloud sync
+
+The domain model is isolated from SQLite so those can be added later without rewriting the local core.
+
+## Historical name
+
+An earlier plan used the working name DecisionVault. The product is Canon. That historical plan is archived under `docs/historical/` and is not user-facing.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
