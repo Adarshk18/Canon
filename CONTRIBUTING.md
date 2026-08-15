@@ -58,6 +58,8 @@ Keep cloud ideas behind interfaces. Do not add a mandatory backend.
 3. Add tests, including a regression test for any bug.
 4. Run `pytest`, `ruff check`, and `mypy`.
 5. Do not commit secrets, `.env`, or `.canon/canon.db`.
+6. Do not commit product plans, SaaS plans, strategy docs, or internal
+   build briefs (PDF/TXT/DOCX). Those stay local and are gitignored.
 
 ## Product name
 

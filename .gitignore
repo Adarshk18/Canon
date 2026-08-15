@@ -28,11 +28,20 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Local-only source plans (not for the public repo)
+# Product / strategy / build plans — never commit or push
 DecisionVault_SaaS_Plan.pdf
 canon_plan.txt
 docs/historical/DecisionVault_SaaS_Plan.pdf
 docs/historical/canon_plan.txt
+*SaaS_Plan.pdf
+*_SaaS_Plan.pdf
+*product*plan*.pdf
+*product*plan*.txt
+*build*plan*.pdf
+*build*plan*.docx
+docs/historical/*.pdf
+docs/historical/*.txt
+!docs/historical/README.md
 
 # Canon local state (this repo and dogfood)
 .canon/canon.db
