@@ -27,10 +27,15 @@ def test_corrupt_database_is_detected(tmp_path: Path) -> None:
     store = Store(path)
     store.close()
     path.write_bytes(b"not a sqlite database")
+    opened: Store | None = None
     try:
-        Store(path)
+        opened = Store(path)
+        raise AssertionError("corrupt database should not open")
     except Exception as exc:
         assert "database" in str(exc).lower() or "sqlite" in str(exc).lower()
+    finally:
+        if opened is not None:
+            opened.close()
 
 
 def test_apply_on_empty_connection(tmp_path: Path) -> None:

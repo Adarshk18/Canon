@@ -22,11 +22,18 @@ def _connect(path: Path) -> sqlite3.Connection:
             "Canon could not open the local decision database.",
             f"Path: {path}",
         ) from exc
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA busy_timeout = 5000")
-    conn.execute("PRAGMA synchronous = NORMAL")
+    try:
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA busy_timeout = 5000")
+        conn.execute("PRAGMA synchronous = NORMAL")
+    except sqlite3.Error as exc:
+        conn.close()
+        raise DatabaseError(
+            "Canon could not open the local decision database.",
+            f"Path: {path}",
+        ) from exc
     return conn
 
 
@@ -34,10 +41,20 @@ class Store:
     def __init__(self, path: Path) -> None:
         self.path = path
         self.conn = _connect(path)
-        apply_migrations(self.conn)
+        try:
+            apply_migrations(self.conn)
+        except Exception:
+            self.close()
+            raise
 
     def close(self) -> None:
-        self.conn.close()
+        conn = getattr(self, "conn", None)
+        if conn is None:
+            return
+        try:
+            conn.close()
+        finally:
+            self.conn = None  # type: ignore[assignment]
 
     def __enter__(self) -> Store:
         return self
