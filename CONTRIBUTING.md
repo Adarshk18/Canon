@@ -3,8 +3,8 @@
 ## Setup
 
 ```bash
-git clone <this-repo>
-cd canon
+git clone https://github.com/Adarshk18/Canon.git
+cd Canon
 python -m pip install -e ".[dev]"
 ```
 
@@ -65,3 +65,24 @@ Keep cloud ideas behind interfaces. Do not add a mandatory backend.
 
 The product and CLI are **Canon**. Do not reintroduce the historical working
 name in UI, CLI, package metadata, or user-facing copy.
+
+## Releasing
+
+Version is read from `src/canon/__init__.py` (`__version__`).
+
+1. Bump `__version__` and update `CHANGELOG.md`.
+2. Push to `main` and wait for CI.
+3. Create a GitHub release named `vX.Y.Z` (for example `v1.0.1`).
+4. `.github/workflows/publish.yml` builds the sdist/wheel and uploads to PyPI
+   as `canon-memory` using trusted publishing.
+
+First-time PyPI setup (once):
+
+1. Create a PyPI account and enable 2FA.
+2. Add a pending trusted publisher:
+   - PyPI project name: `canon-memory`
+   - Owner: `Adarshk18`
+   - Repository: `Canon`
+   - Workflow: `publish.yml`
+   - Environment: `pypi`
+3. Confirm the GitHub Actions environment `pypi` exists on this repository.

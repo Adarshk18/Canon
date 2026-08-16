@@ -1,5 +1,10 @@
 # Canon
 
+[![CI](https://github.com/Adarshk18/Canon/actions/workflows/ci.yml/badge.svg)](https://github.com/Adarshk18/Canon/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/canon-memory.svg)](https://pypi.org/project/canon-memory/)
+[![Python Version](https://img.shields.io/pypi/pyversions/canon-memory.svg)](https://pypi.org/project/canon-memory/)
+[![License: MIT](https://img.shields.io/pypi/l/canon-memory.svg)](https://github.com/Adarshk18/Canon/blob/main/LICENSE)
+
 **Canon remembers the decisions your repo already made — and makes Claude Code and Cursor follow them automatically.**
 
 Governed project decision memory for AI coding agents.
@@ -35,16 +40,18 @@ Canon mines recent merged PRs (or Git history) and proposes candidate decisions.
 Requires Python 3.11 or newer and Git.
 
 ```bash
-pip install git+https://github.com/Adarshk18/Canon.git
+pip install canon-memory
 ```
 
-From a local checkout (development):
+Isolated CLI install (recommended):
 
 ```bash
-python -m pip install -e ".[dev]"
+pipx install canon-memory
+# or
+uv tool install canon-memory
 ```
 
-The product and CLI are **Canon**. The install name is `canon-memory` because `canon` is taken on PyPI by an unrelated package. There is no PyPI release yet; install from this GitHub repo.
+The product and CLI are **Canon**. The PyPI name is `canon-memory` because `canon` is taken by an unrelated package.
 
 ```bash
 canon --help
@@ -162,13 +169,13 @@ The default is local and private. No account is required.
 - Network is used only for optional GitHub PR metadata.
 - Telemetry is **off** unless you set `CANON_TELEMETRY=1`, and even then V1 only appends local events to `.canon/telemetry.jsonl`.
 
-See [PRIVACY.md](PRIVACY.md).
+See [PRIVACY.md](https://github.com/Adarshk18/Canon/blob/main/PRIVACY.md).
 
 ## Security
 
 Canon treats commit messages, PR titles, PR bodies, filenames, and API responses as untrusted data. They are never executed and never treated as instructions. Git and `gh` run with argument lists, not a shell. SQL is parameterized.
 
-See [SECURITY.md](SECURITY.md).
+See [SECURITY.md](https://github.com/Adarshk18/Canon/blob/main/SECURITY.md).
 
 ## Configuration
 
@@ -198,7 +205,7 @@ Defaults:
 | `mining.min_score` | 6 | Conservative suggestion threshold |
 | `privacy.telemetry` | false | Local event log only, off by default |
 
-Copy [.env.example](.env.example) if you need environment overrides. Never commit `.env`.
+Copy [`.env.example`](https://github.com/Adarshk18/Canon/blob/main/.env.example) if you need environment overrides. Never commit `.env`.
 
 ## Troubleshooting
 
@@ -214,14 +221,22 @@ Copy [.env.example](.env.example) if you need environment overrides. Never commi
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/Adarshk18/Canon/blob/main/CONTRIBUTING.md).
 
 ```bash
+git clone https://github.com/Adarshk18/Canon.git
+cd Canon
 python -m pip install -e ".[dev]"
 pytest
 ruff check src tests
 mypy
 python -m build
+```
+
+Install unreleased `main` without a checkout:
+
+```bash
+pip install git+https://github.com/Adarshk18/Canon.git
 ```
 
 ## Testing
@@ -248,4 +263,4 @@ An earlier plan used the working name DecisionVault. The product is Canon.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/Adarshk18/Canon/blob/main/LICENSE).

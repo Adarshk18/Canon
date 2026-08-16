@@ -14,10 +14,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install package and dev tools
@@ -32,14 +32,27 @@ jobs:
         run: pytest
       - name: Build
         run: python -m build
-      - name: Dependency audit
-        run: pip-audit
+      - name: Twine check
+        run: python -m twine check --strict dist/*
+      - name: Dependency audit (runtime)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tomllib
+
+          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          Path("runtime-reqs.txt").write_text(
+              "\n".join(data["project"]["dependencies"]) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          pip-audit -r runtime-reqs.txt
 
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install and test

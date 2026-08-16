@@ -28,10 +28,15 @@ def test_command_help_pages() -> None:
         "approve",
         "reject",
         "list",
+        "show",
         "inject-preview",
+        "inject",
         "doctor",
+        "config",
         "export",
+        "import",
         "uninstall",
+        "version",
     ):
         result = runner.invoke(app, [command, "--help"])
         assert result.exit_code == 0, result.output

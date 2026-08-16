@@ -2,9 +2,11 @@
 
 ## Reporting vulnerabilities
 
-Email the maintainers privately. Do not open a public issue for a previously
-undisclosed vulnerability. Include reproduction steps, impact, and whether
-repository content, GitHub credentials, or local files are involved.
+Report privately through
+[GitHub Security Advisories](https://github.com/Adarshk18/Canon/security/advisories/new).
+Do not open a public issue for a previously undisclosed vulnerability. Include
+reproduction steps, impact, and whether repository content, GitHub credentials,
+or local files are involved.
 
 There is no bug bounty. We will acknowledge valid reports and fix them in a
 patch release when possible.
