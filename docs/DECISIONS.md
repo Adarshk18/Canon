@@ -49,6 +49,13 @@ The source plan allows optional anonymous telemetry. Shipping a network
 client without a real endpoint would be fake telemetry. V1 records locally
 only when opted in.
 
+## Effective range is git ancestry
+
+A decision is current only if its `effective_from` commit is already an
+ancestor of HEAD, and no revert/`effective_until` commit has landed.
+Claude auto-memory and Cursor memories are model-written notes. Canon
+does not let the agent author or refresh decisions.
+
 ## Nested git repository
 
 The workspace `E:\Canon` previously sat inside an unrelated parent Git

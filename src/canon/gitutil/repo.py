@@ -11,6 +11,11 @@ from canon.security.sanitize import sanitize_text
 _GITHUB_REMOTE = re.compile(
     r"(?:git@github\.com:|https://github\.com/|ssh://git@github\.com/)(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?$"
 )
+_SHA = re.compile(r"^[0-9a-fA-F]{7,40}$")
+
+
+def _looks_like_sha(value: str) -> bool:
+    return bool(value) and _SHA.fullmatch(value.strip()) is not None
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,9 +106,72 @@ class GitRepo:
             files.append(path)
         return files
 
-    def recent_commits(self, limit: int = 40) -> list[GitCommit]:
+    def default_ref(self) -> str:
+        """Tip that has landed on the default branch. Feature HEADs are ignored."""
+        symbolic = self.run(
+            "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD", check=False
+        )
+        if symbolic.ok:
+            ref = symbolic.stdout.strip()
+            if ref:
+                return ref
+        for candidate in ("origin/main", "origin/master", "main", "master"):
+            verified = self.run("rev-parse", "--verify", candidate, check=False)
+            if verified.ok and verified.stdout.strip():
+                return candidate
+        return "HEAD"
+
+    def commit_exists(self, sha: str) -> bool:
+        if not _looks_like_sha(sha):
+            return False
+        result = self.run("cat-file", "-e", f"{sha}^{{commit}}", check=False)
+        return result.ok
+
+    def is_ancestor(self, maybe_ancestor: str, descendant: str | None = None) -> bool:
+        if not _looks_like_sha(maybe_ancestor):
+            return False
+        tip = descendant or self.head_sha()
+        if not tip or not _looks_like_sha(tip):
+            return False
+        result = self.run(
+            "merge-base", "--is-ancestor", maybe_ancestor, tip, check=False
+        )
+        return result.ok
+
+    def find_revert_commit(self, sha: str) -> str | None:
+        """Return the revert commit if git recorded `This reverts commit <sha>`."""
+        if not _looks_like_sha(sha):
+            return None
+        needle = sha.strip().lower()
+        result = self.run(
+            "log",
+            "-n200",
+            "--format=%H%x1f%s%x1f%b%x1e",
+            check=False,
+        )
+        if not result.ok:
+            return None
+        revert_re = re.compile(r"(?i)this reverts commit ([0-9a-f]{7,40})")
+        for record in result.stdout.split("\x1e"):
+            record = record.strip("\n")
+            if not record.strip():
+                continue
+            parts = record.split("\x1f")
+            if len(parts) < 3:
+                continue
+            current, subject, body = parts[0].strip(), parts[1], parts[2]
+            match = revert_re.search(f"{subject}\n{body}")
+            if not match:
+                continue
+            found = match.group(1).lower()
+            if needle.startswith(found) or found.startswith(needle[:7]):
+                return current
+        return None
+
+    def recent_commits(self, limit: int = 40, *, landed: bool = True) -> list[GitCommit]:
         fmt = "%H%x1f%aI%x1f%s%x1f%P%x1f%b%x1e"
-        result = self.run("log", f"-n{int(limit)}", f"--format={fmt}", check=False)
+        ref = self.default_ref() if landed else "HEAD"
+        result = self.run("log", ref, f"-n{int(limit)}", f"--format={fmt}", check=False)
         if not result.ok:
             return []
         commits: list[GitCommit] = []
@@ -122,7 +190,7 @@ class GitRepo:
                     sha=sha.strip(),
                     authored_at=authored_at.strip(),
                     subject=sanitize_text(subject.strip(), limit=300),
-                    body=sanitize_text(body.strip(), limit=2000),
+                    body=sanitize_text(body.strip(), limit=4000),
                     files=tuple(files),
                     is_merge=len(parents.split()) > 1,
                 )

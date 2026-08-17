@@ -7,9 +7,9 @@ from canon.db.migrations import apply_migrations, current_version
 from canon.db.store import Store
 
 
-def test_fresh_install_applies_v1(tmp_path: Path) -> None:
+def test_fresh_install_applies_latest(tmp_path: Path) -> None:
     store = Store(tmp_path / "canon.db")
-    assert store.schema_version() == 1
+    assert store.schema_version() == store.expected_schema_version()
     store.close()
 
 
@@ -18,7 +18,7 @@ def test_existing_database_is_idempotent(tmp_path: Path) -> None:
     first = Store(path)
     first.close()
     second = Store(path)
-    assert second.schema_version() == 1
+    assert second.schema_version() == second.expected_schema_version()
     second.close()
 
 
@@ -43,6 +43,6 @@ def test_apply_on_empty_connection(tmp_path: Path) -> None:
     conn = sqlite3.connect(path)
     assert current_version(conn) == 0
     applied = apply_migrations(conn)
-    assert applied == [1]
-    assert current_version(conn) == 1
+    assert applied == [1, 2]
+    assert current_version(conn) == 2
     conn.close()

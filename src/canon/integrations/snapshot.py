@@ -4,6 +4,7 @@ from pathlib import Path
 
 from canon.config.paths import ProjectPaths
 from canon.config.settings import Settings
+from canon.core.effective import visible_at_head
 from canon.core.models import Decision, DecisionStatus
 from canon.db.store import Store
 from canon.gitutil.repo import GitRepo
@@ -20,9 +21,13 @@ def select_for_injection(
     query: str | None = None,
 ) -> tuple[list[Decision], dict[str, int], str]:
     active = store.list(statuses=[DecisionStatus.ACTIVE])
-    ranked = rank_decisions(active, changed_files=repo.changed_files(), query=query)
+    current = [item for item in active if visible_at_head(repo, item)]
+    ranked = rank_decisions(current, changed_files=repo.changed_files(), query=query)
     blocks = [render_decision_block(item) for item in ranked]
     selected, selected_blocks, stats = apply_budget(ranked, blocks, settings.injection)
+    stats["available"] = len(active)
+    stats["current"] = len(current)
+    stats["skipped_not_on_head"] = len(active) - len(current)
     text = render_injection(selected)
     return selected, stats, text
 

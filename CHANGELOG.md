@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0 — 2026-08-17
+
+- Inject only decisions whose source commit is already on this checkout
+- Hide a decision after a git revert or an explicit supersede
+- Mine local git from the default branch, not the current feature branch
+- Do not treat `migrate utils into lib/` as a decision
+- Stop tagging unrelated commits as `auth` (`session`, `security/`)
+- Keep the full commit/PR explanation on suggest/show (injection stays short)
+
 ## 1.0.1 — 2026-08-16
 
 - First PyPI release: `pip install canon-memory`

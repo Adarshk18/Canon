@@ -83,6 +83,7 @@ class DecisionService:
             evidence=evidence,
             fingerprint=fp,
             extra=extra or {},
+            effective_from=source_commit,
         )
         created = self.store.insert(decision)
         self.store.record_event("suggestion_created", {"id": created.id})
@@ -95,6 +96,7 @@ class DecisionService:
         *,
         confirmed_by: str,
         supersedes_id: int | None = None,
+        at_commit: str | None = None,
     ) -> tuple[Decision, Decision | None]:
         decision = self.store.get(decision_id)
         require_transition(decision.status, DecisionStatus.ACTIVE)
@@ -104,12 +106,19 @@ class DecisionService:
         if target is None:
             target = self.suggest_supersession(decision)
         if target is not None:
-            superseded = self._supersede(target, replacement_id=decision_id, when=now)
+            superseded = self._supersede(
+                target,
+                replacement_id=decision_id,
+                when=now,
+                until_commit=at_commit,
+            )
             decision.supersedes_id = target
         decision.status = DecisionStatus.ACTIVE
         decision.confirmed_at = now
         decision.confirmed_by = confirmed_by
         decision.authority = "human"
+        if not decision.effective_from:
+            decision.effective_from = decision.source_commit or at_commit
         updated = self.store.update(decision)
         self.store.record_event(
             "suggestion_approved",
@@ -142,7 +151,14 @@ class DecisionService:
                 return existing.id
         return actives[-1].id if len(actives) == 1 else None
 
-    def _supersede(self, old_id: int, *, replacement_id: int, when: str) -> Decision:
+    def _supersede(
+        self,
+        old_id: int,
+        *,
+        replacement_id: int,
+        when: str,
+        until_commit: str | None = None,
+    ) -> Decision:
         old = self.store.get(old_id)
         if old.status is DecisionStatus.SUPERSEDED:
             return old
@@ -154,6 +170,8 @@ class DecisionService:
         old.status = DecisionStatus.SUPERSEDED
         old.superseded_by_id = replacement_id
         old.superseded_at = when
+        if until_commit and not old.effective_until:
+            old.effective_until = until_commit
         return self.store.update(old)
 
     def import_decisions(self, payload: dict[str, object], *, overwrite: bool = False) -> int:

@@ -56,6 +56,8 @@ class Decision:
     source_commit: str | None = None
     source_url: str | None = None
     source_date: str | None = None
+    effective_from: str | None = None
+    effective_until: str | None = None
     supersedes_id: int | None = None
     superseded_by_id: int | None = None
     superseded_at: str | None = None
@@ -88,6 +90,10 @@ class Decision:
             lines.append(f"Confirmed: {self.confirmed_at}")
         if self.confirmed_by:
             lines.append(f"Confirmed by: {self.confirmed_by}")
+        if self.effective_from:
+            lines.append(f"Effective from: {self.effective_from[:12]}")
+        if self.effective_until:
+            lines.append(f"Effective until: {self.effective_until[:12]}")
         return lines
 
     def to_row(self) -> dict[str, Any]:
@@ -106,6 +112,8 @@ class Decision:
             "source_commit": self.source_commit,
             "source_url": self.source_url,
             "source_date": self.source_date,
+            "effective_from": self.effective_from,
+            "effective_until": self.effective_until,
             "supersedes_id": self.supersedes_id,
             "superseded_by_id": self.superseded_by_id,
             "superseded_at": self.superseded_at,
@@ -147,6 +155,8 @@ class Decision:
             source_commit=row.get("source_commit"),
             source_url=row.get("source_url"),
             source_date=row.get("source_date"),
+            effective_from=row.get("effective_from"),
+            effective_until=row.get("effective_until"),
             supersedes_id=row.get("supersedes_id"),
             superseded_by_id=row.get("superseded_by_id"),
             superseded_at=row.get("superseded_at"),

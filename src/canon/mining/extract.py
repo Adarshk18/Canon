@@ -38,15 +38,14 @@ def extract_title(raw_title: str, category: str | None) -> str:
 
 
 def extract_body(raw_body: str, evidence: str) -> str:
-    text = sanitize_text(raw_body, limit=1500).strip()
+    """Keep the source explanation for suggest/show. Injection still truncates."""
+    text = sanitize_text(raw_body, limit=4000).strip()
     text = strip_dangerous_lines(text)
     text = re.sub(r"(?i)^co-authored-by:.*$", "", text, flags=re.M)
     text = re.sub(r"(?i)^signed-off-by:.*$", "", text, flags=re.M)
     text = re.sub(r"(?i)^\[quoted:.*$", "", text, flags=re.M)
     paragraphs = [part.strip() for part in re.split(r"\n\s*\n", text) if part.strip()]
-    chosen = paragraphs[0] if paragraphs else text
-    sentences = re.split(r"(?<=[.!?])\s+", chosen)
-    summary = " ".join(sentences[:3]).strip()
-    if not summary:
-        summary = f"Evidence: {evidence}. Confirm only if this reflects a real project decision."
-    return normalize_body(summary)
+    kept = "\n\n".join(paragraphs).strip()
+    if not kept:
+        kept = f"Evidence: {evidence}. Confirm only if this reflects a real project decision."
+    return normalize_body(kept)

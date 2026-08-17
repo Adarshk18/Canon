@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass, field
+from pathlib import PurePosixPath
 
 from canon.core.models import Confidence
 
 DECISION_PATTERNS = (
     re.compile(r"(?i)\bswitch(?:ed|ing)? to\b"),
-    re.compile(r"(?i)\bmigrat(?:e|ed|ing)\b"),
     re.compile(r"(?i)\breplace[sd]?\b.+\bwith\b"),
     re.compile(r"(?i)\badopt(?:ed|ing)?\b"),
     re.compile(r"(?i)\binstead of\b"),
@@ -23,6 +24,7 @@ DECISION_PATTERNS = (
     re.compile(r"(?i)\bprefer(?:ring)?\s+(to use|using)\b"),
     re.compile(r"(?i)\bdrop(?:ped|ping)? support\b"),
     re.compile(r"(?i)\brequire[sd]?\b.+\binstead\b"),
+    # Stack/product migrate only. Bare "migrate utils into lib/" is a file move.
     # Product / policy decisions common in app repos (not stack migrations).
     re.compile(r"(?i)\bdrop(?:ped|ping)?\b.+\b(pages?|feature|flow|agent|analytics)\b"),
     re.compile(r"(?i)\brestore\b.+\b(landing|flow|cta|signup|login|pricing|agent)\b"),
@@ -87,8 +89,6 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
         "authorization",
         "sso",
         "saml",
-        "password",
-        "session",
     ),
     "architecture": (
         "architecture",
@@ -138,7 +138,7 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
 
 PATH_HINTS: dict[str, tuple[str, ...]] = {
     "database": ("alembic", "prisma", "migrations", "schema.sql", "models/"),
-    "auth": ("auth/", "oauth", "security/"),
+    "auth": ("auth/", "oauth"),
     "infrastructure": (
         "dockerfile",
         "docker-compose",
@@ -149,6 +149,78 @@ PATH_HINTS: dict[str, tuple[str, ...]] = {
     ),
     "security": ("security/", ".well-known"),
 }
+
+_FOLDER_WORDS = frozenset(
+    {
+        "utils",
+        "util",
+        "helpers",
+        "helper",
+        "lib",
+        "libs",
+        "src",
+        "pkg",
+        "packages",
+        "modules",
+        "module",
+        "components",
+        "internal",
+        "cmd",
+        "app",
+        "apps",
+        "core",
+        "shared",
+        "common",
+        "files",
+        "file",
+        "code",
+    }
+)
+_FILE_MOVE_TITLE = re.compile(
+    r"(?i)\bmigrat(?:e|ed|ing)\s+\S+\s+(?:into|to)\s+\S*[/\\]"
+)
+_MIGRATE_TO = re.compile(
+    r"(?i)\bmigrat(?:e|ed|ing)\s+(?:from\s+.+?\s+)?(?:to|into)\s+(?:the\s+)?"
+    r"([^\s,;]+(?:\s+[^\s,;]+){0,4})"
+)
+
+
+def _keyword_hit(haystack: str, keyword: str) -> bool:
+    if " " in keyword:
+        return keyword in haystack
+    return re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", haystack) is not None
+
+
+def _migrate_is_decision(title: str, body: str) -> bool:
+    for text in (title, body):
+        for match in _MIGRATE_TO.finditer(text):
+            target = match.group(1).strip().rstrip(".")
+            if "/" in target or "\\" in target:
+                continue
+            first = target.split()[0].lower()
+            if first in _FOLDER_WORDS:
+                continue
+            return True
+    return False
+
+
+def _same_basename_shuffle(files: tuple[str, ...]) -> bool:
+    names = [PurePosixPath(path.replace("\\", "/")).name.lower() for path in files]
+    if len(names) < 2:
+        return False
+    counts = Counter(names)
+    return all(count >= 2 for count in counts.values())
+
+
+def _is_file_move(title: str, files: tuple[str, ...]) -> bool:
+    if _FILE_MOVE_TITLE.search(title):
+        return True
+    if re.search(r"(?i)\b(?:migrat(?:e|ed|ing)|move[sd]?)\b", title) and _same_basename_shuffle(
+        files
+    ):
+        return True
+    return False
+
 
 NOISE_PATHS = (
     "package-lock.json",
@@ -196,6 +268,11 @@ def score_change(
     text = _haystack(title, body, files)
     lowered_files = tuple(path.lower() for path in files)
 
+    if _is_file_move(title, files):
+        result.value -= 5
+        result.noise = True
+        result.reasons.append("Looks like a file move, not a project decision")
+
     if any(pattern.search(title) or pattern.search(body) for pattern in NOISE_PATTERNS):
         result.value -= 5
         result.noise = True
@@ -219,6 +296,8 @@ def score_change(
         result.reasons.append("Test-only change")
 
     decided = any(pattern.search(title) or pattern.search(body) for pattern in DECISION_PATTERNS)
+    if _migrate_is_decision(title, body):
+        decided = True
     if decided:
         result.value += 4
         result.reasons.append("Explicit decision language")
@@ -239,7 +318,7 @@ def score_change(
     best_hits = 0
     lowered = text.lower()
     for category, keywords in CATEGORY_KEYWORDS.items():
-        hits = sum(1 for word in keywords if word in lowered)
+        hits = sum(1 for word in keywords if _keyword_hit(lowered, word))
         path_hits = sum(
             1 for hint in PATH_HINTS.get(category, ()) if any(hint in path for path in lowered_files)
         )

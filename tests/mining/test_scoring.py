@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from canon.mining.extract import extract_title
+from canon.mining.extract import extract_body, extract_title
 from canon.mining.scoring import score_change
 
 
@@ -98,6 +98,38 @@ def test_ui_polish_and_copy_tweaks_stay_filtered() -> None:
     assert navbar.value < 6 or navbar.noise
 
 
+def test_file_move_migrate_is_not_a_decision() -> None:
+    score = score_change(
+        title="refactor: migrate utils into lib/",
+        body="move helpers",
+        files=("src/utils/helpers.py", "src/lib/helpers.py"),
+        is_pr=True,
+    )
+    assert score.noise or score.value < 6
+
+
+def test_stack_migrate_still_scores() -> None:
+    score = score_change(
+        title="feat(db): migrate to PostgreSQL",
+        body="We decided to use PostgreSQL because we need transactions.",
+        files=("src/db/engine.py", "alembic/versions/0001.py"),
+        is_pr=True,
+    )
+    assert score.value >= 6
+    assert not score.noise
+    assert score.category == "database"
+
+
+def test_session_word_is_not_auth() -> None:
+    score = score_change(
+        title="feat(logging): persist request session id",
+        body="store the session id on the request log line",
+        files=("src/log/writer.py",),
+        is_pr=True,
+    )
+    assert score.category != "auth"
+
+
 def test_extract_product_titles() -> None:
     dropped = extract_title(
         "feat(product): drop user analytics pages, restore four-agent landing",
@@ -109,3 +141,14 @@ def test_extract_product_titles() -> None:
     )
     assert dropped.lower().startswith("do not keep")
     assert "interview debrief" in renamed.lower()
+
+
+def test_extract_body_keeps_later_paragraphs() -> None:
+    raw = (
+        "We are moving voice to Chirp 3.\n\n"
+        "Language detection is automatic. Timeouts stay at 8s.\n\n"
+        "Do not fall back to the old vendor."
+    )
+    body = extract_body(raw, "PR #2942")
+    assert "Chirp 3" in body
+    assert "Do not fall back" in body

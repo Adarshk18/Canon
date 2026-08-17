@@ -22,6 +22,7 @@ def test_approve_and_supersede(tmp_path: Path) -> None:
     assert first is not None
     approved, superseded = service.approve(first.id or 0, confirmed_by="dev@example.com")
     assert approved.status is DecisionStatus.ACTIVE
+    assert approved.effective_from == "aaa111"
     assert superseded is None
 
     second = service.create_candidate(

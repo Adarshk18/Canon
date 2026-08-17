@@ -300,7 +300,9 @@ def _review_candidates(
         answer = Prompt.ask("Approve?", choices=["Y", "n", "s"], default="Y")
         if answer.lower() == "y":
             approved, superseded = runtime.service.approve(
-                item.id, confirmed_by=runtime.repo.identity()
+                item.id,
+                confirmed_by=runtime.repo.identity(),
+                at_commit=runtime.repo.head_sha(),
             )
             console.print(f"Approved #{approved.id}.")
             if superseded:
@@ -343,6 +345,7 @@ def approve_cmd(
             decision_id,
             confirmed_by=runtime.repo.identity(),
             supersedes_id=supersedes,
+            at_commit=runtime.repo.head_sha(),
         )
         refresh_injection_files(runtime.paths, runtime.store, runtime.repo, runtime.settings)
         payload = {
@@ -493,8 +496,12 @@ def inject_preview_cmd(
             return
         console.print(text.rstrip())
         console.print("")
+        extra = ""
+        skipped = int(stats.get("skipped_not_on_head") or 0)
+        if skipped:
+            extra = f", {skipped} hidden (not on this checkout)"
         console.print(
-            f"({stats['selected']} of {stats['available']} active, "
+            f"({stats['selected']} of {stats['available']} active{extra}, "
             f"{stats['chars']} chars, ~{stats['tokens']} tokens)"
         )
     finally:

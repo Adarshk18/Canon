@@ -74,7 +74,7 @@ def mine_candidates(
                 result.skipped += 1
         return result
 
-    commits = repo.recent_commits(settings.mining.lookback_commits)
+    commits = repo.recent_commits(settings.mining.lookback_commits, landed=True)
     if result.source == "github":
         result.source = "git"
         result.warning = (
@@ -83,8 +83,9 @@ def mine_candidates(
         )
     elif result.warning is None:
         result.warning = (
-            "GitHub is unavailable. Canon is using local Git history. "
-            "Install GitHub CLI and run `gh auth login` for PR provenance."
+            "GitHub is unavailable. Canon is reading commits that landed on "
+            "the default branch. Install GitHub CLI and run `gh auth login` "
+            "for PR provenance."
         )
         result.source = "git"
 

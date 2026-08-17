@@ -47,6 +47,16 @@ Source: the original product plan (Aug 2026). The shipping product is Canon.
 | Path traversal | `security/paths.py` | `tests/security/test_paths.py` | Complete |
 | Command injection | `gitutil/runner.py` | `tests/security/test_sql_and_shell.py` | Complete |
 
+## 1.1 hardening (this repo)
+
+| Requirement | Implementation | Tests | Status |
+| --- | --- | --- | --- |
+| Checkout-time range | `core/effective.py` | `tests/core/test_effective.py` | Complete |
+| Unmerged branch isolation | default-branch mine + ancestry | same | Complete |
+| File-move `migrate` is noise | `mining/scoring.py` | `tests/mining/test_scoring.py` | Complete |
+| Auth labels | keyword boundaries, drop `session` | same | Complete |
+| Keep source explanation | `mining/extract.py` | same | Complete |
+
 ## Explicitly deferred
 
 - Slack / Notion connectors

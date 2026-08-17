@@ -40,8 +40,10 @@ GitHub is preferred when `gh auth status` succeeds. Otherwise Canon uses
 
 ## Injection
 
-Only `active` decisions. Ranked by directory/tag overlap, optional query
-text, and recency. Hard caps: count, characters, estimated tokens.
+Only `active` decisions that are current at HEAD (source commit is an
+ancestor; not reverted or superseded). Ranked by directory/tag overlap,
+optional query text, and recency. Hard caps: count, characters, estimated
+tokens. Suggest/show keep the source explanation; injection still truncates.
 
 Claude Code: official SessionStart command hook, exec form, JSON
 `additionalContext`.

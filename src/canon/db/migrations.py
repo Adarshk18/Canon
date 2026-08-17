@@ -61,6 +61,17 @@ MIGRATIONS: Sequence[tuple[int, str, str]] = (
         );
         """,
     ),
+    (
+        2,
+        "effective_range",
+        """
+        ALTER TABLE decisions ADD COLUMN effective_from TEXT;
+        ALTER TABLE decisions ADD COLUMN effective_until TEXT;
+        UPDATE decisions
+            SET effective_from = source_commit
+            WHERE source_commit IS NOT NULL AND source_commit != '';
+        """,
+    ),
 )
 
 
