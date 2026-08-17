@@ -29,6 +29,10 @@ from `git` / GitHub are used for scoring, not uploaded.
 
 ## Network calls
 
+Optional Canon Cloud (`canon cloud push` / `pull`) sends the same JSON as
+`canon export` to the server you configure with `CANON_CLOUD_URL`. No GitHub
+tokens and no source code. Do not enable it if you want a fully local setup.
+
 The only network call in V1 is optional GitHub access during `canon suggest`:
 
 - `gh pr list` (GitHub CLI), or

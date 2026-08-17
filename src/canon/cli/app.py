@@ -11,6 +11,7 @@ import typer
 from rich.prompt import Confirm, Prompt
 
 from canon import PRODUCT_NAME, __version__
+from canon.cli.cloud import cloud_app
 from canon.config.paths import ProjectPaths
 from canon.config.settings import load_settings, merge_set, write_settings
 from canon.constants import GITIGNORE_ENTRIES, HOOK_FLAG
@@ -50,6 +51,7 @@ app = typer.Typer(
 )
 
 state: dict[str, Any] = {"json": False, "debug": False}
+app.add_typer(cloud_app, name="cloud")
 
 
 def _version_option(value: bool) -> None:

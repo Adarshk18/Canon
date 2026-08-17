@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 — 2026-08-17
+
+- Optional Canon Cloud: `canon cloud login|push|pull|invite|upgrade`
+- Team workspaces keyed by the GitHub repo slug
+- Billing via Polar.sh (not Stripe — India is invite-only)
+- Local CLI still works with no account and no server
+
 ## 1.1.0 — 2026-08-17
 
 - Inject only decisions whose source commit is already on this checkout

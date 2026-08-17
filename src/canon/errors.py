@@ -53,3 +53,7 @@ class SecurityError(CanonError):
 
 class IntegrationError(CanonError):
     pass
+
+
+class CloudError(CanonError):
+    pass

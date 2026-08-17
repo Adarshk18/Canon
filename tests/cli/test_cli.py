@@ -20,6 +20,12 @@ def test_help_and_version() -> None:
     assert __version__ in version_result.output
 
 
+def test_cloud_help() -> None:
+    result = runner.invoke(app, ["cloud", "--help"])
+    assert result.exit_code == 0
+    assert "login" in result.output
+
+
 def test_command_help_pages() -> None:
     for command in (
         "init",
@@ -37,6 +43,7 @@ def test_command_help_pages() -> None:
         "import",
         "uninstall",
         "version",
+        "cloud",
     ):
         result = runner.invoke(app, [command, "--help"])
         assert result.exit_code == 0, result.output

@@ -49,6 +49,12 @@ The source plan allows optional anonymous telemetry. Shipping a network
 client without a real endpoint would be fake telemetry. V1 records locally
 only when opted in.
 
+## Polar, not Stripe
+
+Stripe does not take open signups in India. Canon Cloud bills through Polar.sh
+so a founder in India can actually get a merchant account. The billing
+provider is swappable; the CLI never talks to Polar directly.
+
 ## Effective range is git ancestry
 
 A decision is current only if its `effective_from` commit is already an

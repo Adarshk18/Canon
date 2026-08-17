@@ -243,6 +243,20 @@ pip install git+https://github.com/Adarshk18/Canon.git
 
 `pytest` covers decision lifecycle, supersession, mining filters, injection budget, CLI commands, path traversal, SQL injection, command injection, and prompt-injection-style repository content.
 
+## Canon Cloud (optional)
+
+Local use needs no account. Cloud is sync + team seats + billing.
+
+```bash
+export CANON_CLOUD_URL=https://your-canon-host
+canon cloud login
+canon cloud push
+canon cloud pull
+canon cloud upgrade pro
+```
+
+Billing is **Polar.sh**, not Stripe (Stripe India is invite-only). See [docs/SAAS.md](https://github.com/Adarshk18/Canon/blob/main/docs/SAAS.md).
+
 ## Roadmap / deferred features
 
 Intentionally **not** in V1, matching the source product plan:
@@ -253,7 +267,6 @@ Intentionally **not** in V1, matching the source product plan:
 - Deep MCP query interface
 - Enterprise self-host packaging
 - Organization management and SSO
-- Billing and cloud sync
 
 The domain model is isolated from SQLite so those can be added later without rewriting the local core.
 

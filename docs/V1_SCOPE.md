@@ -65,5 +65,6 @@ Source: the original product plan (Aug 2026). The shipping product is Canon.
 - Deep MCP query interface
 - Enterprise self-host packaging
 - Organization management / SSO
-- Stripe billing / cloud sync / accounts
 - PostHog or remote telemetry
+
+Cloud sync, accounts, and Polar billing shipped in 1.2.0 (optional). Stripe is not used.

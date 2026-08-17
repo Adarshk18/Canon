@@ -1,0 +1,1 @@
+"""Optional Canon Cloud client. Local CLI works without this."""
