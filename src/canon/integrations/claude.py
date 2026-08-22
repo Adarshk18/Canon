@@ -24,7 +24,8 @@ CLAUDE_RULE = f"""# {MANAGED_BEGIN}
 # Canon — governed project decisions
 #
 # Treat confirmed Canon decisions as authoritative project context.
-# Prefer `.canon/injection.md` and SessionStart hook output over guesswork.
+# Prefer `.canon/CANON.md`, `.canon/injection.md`, and SessionStart hook
+# output over guesswork. Claude auto-memory is not a substitute.
 # If no confirmed decision applies, say you have no confirmed decision
 # rather than inventing a convention.
 # {MANAGED_END}

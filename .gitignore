@@ -50,3 +50,4 @@ docs/historical/*.txt
 .canon/injection.md
 .canon/telemetry.jsonl
 .canon/*.log
+# Commit .canon/CANON.md and .canon/decisions.json (team snapshot)

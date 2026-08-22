@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "canon": {
+      "command": "canon",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

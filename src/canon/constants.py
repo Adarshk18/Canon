@@ -11,6 +11,8 @@ PROJECT_DIRNAME = ".canon"
 CONFIG_FILENAME = "config.toml"
 DB_FILENAME = "canon.db"
 INJECTION_FILENAME = "injection.md"
+CANON_FILENAME = "CANON.md"
+DECISIONS_FILENAME = "decisions.json"
 TELEMETRY_FILENAME = "telemetry.jsonl"
 LOCK_FILENAME = "canon.lock"
 

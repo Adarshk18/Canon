@@ -6,7 +6,9 @@ creating an account.
 ## What stays local
 
 - `.canon/canon.db` — decision history, including superseded and rejected records
-- `.canon/injection.md` — generated snapshot for agents
+- `.canon/injection.md` — generated checkout-local snapshot (gitignored)
+- `.canon/CANON.md` — team snapshot meant to be committed
+- `.canon/decisions.json` — portable export meant to be committed
 - `.canon/config.toml` — project settings
 - `~/.canon/config.toml` — optional user defaults
 - `.canon/telemetry.jsonl` — only if you opt in
@@ -20,9 +22,10 @@ Only what the current command needs:
 
 | Action | Access |
 | --- | --- |
-| `init`, `list`, `status`, `inject-preview`, `approve`, `reject` | Local Git repo metadata and local SQLite |
+| `init`, `list`, `status`, `inject-preview`, `approve`, `reject`, `add`, `query`, `check` | Local Git repo metadata and local SQLite |
 | `suggest` | Local Git history. Optionally GitHub PR metadata if `gh` is authenticated or `GITHUB_TOKEN` is set |
 | Agent hook `canon inject --for-hook` | Local SQLite only |
+| `canon mcp` | Local stdio only. No network. |
 
 Canon does not scan the entire working tree for source code. File paths
 from `git` / GitHub are used for scoring, not uploaded.

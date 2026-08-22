@@ -29,7 +29,19 @@ def open_sync() -> bool:
 
 def create_app(store: CloudStore | None = None) -> FastAPI:
     db = store or CloudStore(default_db_path())
-    app = FastAPI(title="Canon Cloud", version="1.2.0")
+    app = FastAPI(title="Canon Cloud", version="1.3.0")
+
+    @app.get("/", response_class=HTMLResponse)
+    def home() -> str:
+        return (
+            "<!doctype html><html><head><meta charset='utf-8'><title>Canon Cloud</title>"
+            "<style>body{font-family:sans-serif;max-width:40rem;margin:3rem auto;color:#111}"
+            "a{color:#0b57d0}</style></head><body>"
+            "<h1>Canon Cloud</h1>"
+            "<p>Optional sync and seats. Local Canon does not need this.</p>"
+            "<p><a href='/health'>Health</a> · <a href='/device'>Sign in a CLI</a></p>"
+            "</body></html>"
+        )
 
     def current_user(authorization: str | None) -> dict[str, Any]:
         if not authorization or not authorization.lower().startswith("bearer "):

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.0 — 2026-08-22
+
+- Wire Grok, Codex/AGENTS.md, GitHub Copilot, Gemini, Windsurf, Cline, and Continue
+- Team snapshot: committed `.canon/CANON.md` plus `.canon/decisions.json` (clones hydrate on `init`)
+- `canon add` records a decision from chat without waiting for the miner
+- `canon query` looks up active decisions on demand
+- `canon check` fails CI/PRs that re-introduce a rejected decision
+- Local stdio MCP (`canon mcp`) for lookup when injection is truncated
+- GitHub Action `.github/actions/check`
+- Grok SessionStart hook refreshes files (Grok ignores hook stdout)
+- Still does not rewrite CLAUDE.md; still does not let agents write decisions
+
 ## 1.2.0 — 2026-08-17
 
 - Optional Canon Cloud: `canon cloud login|push|pull|invite|upgrade`

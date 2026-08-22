@@ -22,19 +22,13 @@ from canon.errors import CanonError, NotInitializedError, UsageError
 from canon.githubutil.client import GitHubClient
 from canon.gitutil.repo import find_git_root
 from canon.gitutil.runner import which
-from canon.integrations.claude import (
-    claude_status,
-    detect_claude,
-    install_claude,
-    uninstall_claude,
-)
-from canon.integrations.cursor import (
-    cursor_status,
-    detect_cursor,
-    install_cursor,
-    uninstall_cursor,
+from canon.integrations.check import (
+    check_decisions,
+    github_annotations,
+    repo_text,
 )
 from canon.integrations.snapshot import refresh_injection_files, select_for_injection
+from canon.integrations.wire import status_all, uninstall_all
 from canon.mining.engine import mine_candidates
 from canon.output.console import Console
 from canon.runtime import Runtime, configure_logging, load_runtime
@@ -164,20 +158,23 @@ def init_cmd(json_output: bool = _json_flag()) -> None:
     else:
         repo_note.append(".gitignore already lists Canon local files")
 
-    if settings.integrations.claude or detect_claude(root):
-        repo_note.extend(install_claude(root))
-    else:
-        repo_note.append("Claude Code not detected; skipped hook install")
-
-    if settings.integrations.cursor or detect_cursor(root):
-        repo_note.extend(install_cursor(root))
-    else:
-        repo_note.append("Cursor not detected; skipped rule install")
-
     runtime = load_runtime(require_init=True)
     try:
+        empty = sum(runtime.store.counts().values()) == 0
+        if empty and runtime.paths.decisions_file.is_file():
+            try:
+                payload = json.loads(runtime.paths.decisions_file.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                raise CanonError(
+                    "Could not read .canon/decisions.json.",
+                    "Fix or remove the file, then re-run canon init.",
+                ) from exc
+            if isinstance(payload, dict):
+                count = runtime.service.import_decisions(payload)
+                repo_note.append(f"Hydrated {count} decision(s) from .canon/decisions.json")
         refresh_injection_files(runtime.paths, runtime.store, runtime.repo, runtime.settings)
-        repo_note.append("Wrote .canon/injection.md")
+        repo_note.append("Wrote .canon/injection.md and .canon/CANON.md")
+        repo_note.append("Wired Claude, Cursor, Grok, AGENTS.md, Copilot, and MCP")
     finally:
         runtime.close()
 
@@ -199,8 +196,10 @@ def status_cmd(json_output: bool = _json_flag()) -> None:
     try:
         counts = runtime.store.counts()
         github = GitHubClient(runtime.repo).status()
-        claude_ok, claude_msg = claude_status(runtime.paths.repo_root)
-        cursor_ok, cursor_msg = cursor_status(runtime.paths.repo_root)
+        integrations = [
+            {"name": name, "ok": ok, "detail": detail}
+            for name, ok, detail in status_all(runtime.paths.repo_root)
+        ]
         payload = {
             "product": PRODUCT_NAME,
             "version": __version__,
@@ -215,8 +214,7 @@ def status_cmd(json_output: bool = _json_flag()) -> None:
                 "method": github.method,
                 "detail": github.detail,
             },
-            "claude": {"ok": claude_ok, "detail": claude_msg},
-            "cursor": {"ok": cursor_ok, "detail": cursor_msg},
+            "integrations": integrations,
             "telemetry": runtime.settings.privacy.telemetry,
         }
         if console.json_mode:
@@ -231,8 +229,9 @@ def status_cmd(json_output: bool = _json_flag()) -> None:
             f"{counts['superseded']} superseded, {counts['rejected']} rejected"
         )
         console.print(f"GitHub:   {github.detail}")
-        console.print(f"Claude:   {claude_msg}")
-        console.print(f"Cursor:   {cursor_msg}")
+        for item in integrations:
+            mark = "ok" if item["ok"] else "—"
+            console.print(f"{item['name']}: {mark}  {item['detail']}")
         console.print(
             "Telemetry: "
             + ("local opt-in log" if runtime.settings.privacy.telemetry else "off")
@@ -517,6 +516,11 @@ def inject_cmd(
         HOOK_FLAG,
         help="JSON additionalContext for a Claude Code SessionStart hook.",
     ),
+    refresh_files: bool = typer.Option(
+        False,
+        "--refresh-files",
+        help="Rewrite CANON.md and agent snapshots before emitting.",
+    ),
     query: str | None = typer.Option(None, "--query", help="Optional relevance hint."),
     json_output: bool = _json_flag(),
 ) -> None:
@@ -539,6 +543,10 @@ def inject_cmd(
             raise typer.Exit(0) from None
         raise
     try:
+        if refresh_files:
+            refresh_injection_files(
+                runtime.paths, runtime.store, runtime.repo, runtime.settings
+            )
         selected, _stats, text = select_for_injection(
             runtime.store, runtime.repo, runtime.settings, query=query
         )
@@ -595,10 +603,8 @@ def doctor_cmd(json_output: bool = _json_flag()) -> None:
                 )
             finally:
                 store.close()
-            claude_ok, claude_msg = claude_status(root)
-            add("Claude Code integration", claude_ok, claude_msg, warn=not claude_ok)
-            cursor_ok, cursor_msg = cursor_status(root)
-            add("Cursor integration", cursor_ok, cursor_msg, warn=not cursor_ok)
+            for name, ok, detail in status_all(root):
+                add(name, ok, detail, warn=not ok)
         if initialized:
             from canon.gitutil.repo import GitRepo
 
@@ -735,6 +741,120 @@ def import_cmd(
         runtime.close()
 
 
+@app.command("add")
+def add_cmd(
+    title: str = typer.Argument(..., help="Short decision title."),
+    body: str | None = typer.Option(None, "--body", "-b", help="Rationale. Keep it short."),
+    tag: list[str] = typer.Option([], "--tag", "-t", help="Repeatable tag."),
+    category: str | None = typer.Option(None, "--category", "-c", help="Optional category."),
+    approve: bool = typer.Option(
+        False, "--approve", help="Confirm immediately (skip the candidate step)."
+    ),
+    json_output: bool = _json_flag(),
+) -> None:
+    """Record a decision from chat, not just from git mining."""
+    console = _use_json(json_output)
+    runtime = _runtime()
+    try:
+        decision, superseded = runtime.service.add_manual(
+            title=title,
+            body=body or "",
+            confirmed_by=runtime.repo.identity(),
+            tags=tag,
+            category=category,
+            at_commit=runtime.repo.head_sha(),
+            approve=approve,
+        )
+        refresh_injection_files(runtime.paths, runtime.store, runtime.repo, runtime.settings)
+        payload = {
+            "decision": decision.to_row(),
+            "superseded": superseded.to_row() if superseded else None,
+        }
+        if console.json_mode:
+            console.emit_json(payload)
+            return
+        console.print(f"Decision #{decision.id}")
+        console.print(f"Status: {decision.status.value.upper()}")
+        if superseded:
+            console.print(f"Supersedes: #{superseded.id}")
+    finally:
+        runtime.close()
+
+
+@app.command("query")
+def query_cmd(
+    query: str = typer.Argument(..., help="Question, area, or file path."),
+    json_output: bool = _json_flag(),
+) -> None:
+    """Look up relevant active decisions without starting a new agent session."""
+    console = _use_json(json_output)
+    runtime = _runtime()
+    try:
+        selected, stats, text = select_for_injection(
+            runtime.store, runtime.repo, runtime.settings, query=query
+        )
+        if console.json_mode:
+            console.emit_json(
+                {
+                    "text": text,
+                    "stats": stats,
+                    "decision_ids": [item.id for item in selected],
+                }
+            )
+            return
+        console.print(text.rstrip())
+    finally:
+        runtime.close()
+
+
+@app.command("check")
+def check_cmd(
+    text: str | None = typer.Option(
+        None, "--text", help="Text to check. Default: latest commit + GitHub event."
+    ),
+    strict: bool = typer.Option(
+        False, "--strict", help="Fail on warnings as well as rejected-decision hits."
+    ),
+    json_output: bool = _json_flag(),
+) -> None:
+    """Fail if a change re-introduces a rejected decision. Safe for CI."""
+    console = _use_json(json_output)
+    runtime = _runtime()
+    try:
+        source = text if text is not None else repo_text(runtime.repo)
+        findings = check_decisions(
+            rejected=runtime.service.list_decisions(statuses=[DecisionStatus.REJECTED]),
+            text=source,
+        )
+        errors = [item for item in findings if item.severity == "error"]
+        payload = {
+            "findings": [item.to_row() for item in findings],
+            "ok": not errors and not (strict and findings),
+        }
+        if console.json_mode:
+            console.emit_json(payload)
+        else:
+            if not findings:
+                console.print("Canon check: no conflicts.")
+            for item in findings:
+                mark = "✗" if item.severity == "error" else "⚠"
+                console.print(f"{mark} {item.detail}")
+            for line in github_annotations(findings):
+                typer.echo(line)
+        if not payload["ok"]:
+            raise typer.Exit(1)
+    finally:
+        runtime.close()
+
+
+@app.command("mcp")
+def mcp_cmd() -> None:
+    """Run the local stdio MCP server for on-demand decision lookup."""
+    from canon.integrations.mcp import run_stdio
+
+    run_stdio()
+
+
 @app.command("uninstall")
 def uninstall_cmd(
     purge_data: bool = typer.Option(
@@ -754,17 +874,17 @@ def uninstall_cmd(
         if not sys.stdin.isatty() and not yes:
             raise UsageError("Pass --yes to delete decision history in non-interactive mode.")
     changes = []
-    changes.extend(uninstall_claude(root))
-    changes.extend(uninstall_cursor(root))
+    changes.extend(uninstall_all(root))
     if purge_data:
         paths = ProjectPaths.from_repo(root)
         for candidate in (paths.db_file, Path(str(paths.db_file) + "-wal"), Path(str(paths.db_file) + "-shm")):
             if candidate.is_file():
                 candidate.unlink()
                 changes.append(f"Removed {candidate.name}")
-        if paths.injection_file.is_file():
-            paths.injection_file.unlink()
-            changes.append("Removed injection snapshot")
+        for snapshot in (paths.injection_file, paths.canon_md_file, paths.decisions_file):
+            if snapshot.is_file():
+                snapshot.unlink()
+                changes.append(f"Removed {snapshot.name}")
     if console.json_mode:
         console.emit_json({"changes": changes})
         return

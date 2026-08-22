@@ -7,7 +7,9 @@
 | `.canon/config.toml` | Project settings | Yes, if you want shared defaults |
 | `~/.canon/config.toml` | User defaults | No |
 | `.canon/canon.db` | Decision store | No |
-| `.canon/injection.md` | Generated snapshot | No (gitignored) |
+| `.canon/injection.md` | Checkout-local snapshot (HEAD-filtered) | No (gitignored) |
+| `.canon/CANON.md` | Team snapshot of active decisions | Yes |
+| `.canon/decisions.json` | Portable export for clones and CI | Yes |
 | `.env` | Secrets | Never |
 
 ## Precedence

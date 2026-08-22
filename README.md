@@ -76,9 +76,9 @@ canon approve 1
 canon inject-preview
 ```
 
-Then start **Claude Code** or a **new Cursor Agent chat** in the same repository. The agent should see the confirmed decision without you running `canon query`.
+Then start **Claude Code**, **Grok Build**, **Codex**, or a **new Cursor Agent chat** in the same repository. The agent should see the confirmed decision without you running `canon query`.
 
-V1 does not auto-inject into ChatGPT or standalone Grok. Those tools can only see Canon if you attach `.canon/injection.md`.
+ChatGPT web still cannot auto-inject. Attach `.canon/CANON.md`.
 
 ## Claude Code integration
 
@@ -111,6 +111,23 @@ Cursor has no session-start hook. Canon uses the officially supported [project r
 
 Limitation: Cursor will not re-read a changed snapshot until a new Agent session (or a rule reload). Approve a decision, then start a new chat. This is a Cursor platform limitation, not a missing Canon command.
 
+## Other agents (Grok, Codex, Copilot, Gemini, Windsurf, Cline, Continue)
+
+Vendor memory is **not** Canon. Claude auto-memory, Grok memory, Codex memories, and Cursor notes are agent-written, usually machine-local, and have no rejected/superseded lifecycle. Official docs tell you to keep team rules in `AGENTS.md` / `CLAUDE.md` that a human maintains. That is the file that goes stale.
+
+`canon init` writes a managed block into the files those tools actually load:
+
+- `AGENTS.md` (Codex, Copilot agent, Cursor, Grok, Gemini, Jules, Factory, Windsurf)
+- `.grok/rules/canon.md` plus a SessionStart refresh hook (Grok ignores hook stdout)
+- `.github/copilot-instructions.md`
+- `GEMINI.md`
+- `.windsurf/rules/canon.md`
+- `.clinerules/canon.md`
+- `.continue/rules/canon.md`
+- `.mcp.json` → `canon mcp` for on-demand lookup
+
+Canon does not rewrite your `CLAUDE.md`. Commit `.canon/CANON.md` and `.canon/decisions.json` so teammates and CI see the same active decisions. A clone hydrates SQLite from `decisions.json` on `canon init`.
+
 ## CLI commands
 
 | Command | Purpose |
@@ -120,6 +137,10 @@ Limitation: Cursor will not re-read a changed snapshot until a new Agent session
 | `canon suggest` | Mine recent PRs/commits for conservative candidates. |
 | `canon approve [id]` | Candidate → active. May supersede an older decision. |
 | `canon reject <id>` | Candidate → rejected. Record is kept. |
+| `canon add "..."` | Record a decision from chat. `--approve` confirms it immediately. |
+| `canon query <text>` | Look up relevant active decisions. |
+| `canon check` | CI: fail if a change re-introduces a rejected decision. `--strict` also fails on warnings. |
+| `canon mcp` | Local stdio MCP server for on-demand lookup. |
 | `canon list` | List decisions. `--active`, `--superseded`, `--rejected`, `--all`, `--tag`. |
 | `canon show <id>` | Full body and provenance. |
 | `canon inject-preview` | Exactly what an agent would receive. |
@@ -264,9 +285,10 @@ Intentionally **not** in V1, matching the source product plan:
 - Slack or Notion connectors
 - Daily multi-project drift engine
 - Rich team dashboard
-- Deep MCP query interface
 - Enterprise self-host packaging
 - Organization management and SSO
+
+Stdio MCP lookup, AGENTS.md/Copilot/Grok wiring, `canon add` / `canon check`, and a committed team snapshot shipped in 1.3.
 
 The domain model is isolated from SQLite so those can be added later without rewriting the local core.
 

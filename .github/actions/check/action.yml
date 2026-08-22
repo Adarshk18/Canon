@@ -1,0 +1,27 @@
+name: Canon Check
+description: Fail a pull request that re-introduces a rejected Canon decision.
+inputs:
+  extra-args:
+    description: Extra arguments passed to `canon check`.
+    required: false
+    default: "--strict"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+    - name: Install Canon
+      shell: bash
+      run: python -m pip install --upgrade pip canon-memory
+    - name: Initialize and hydrate
+      shell: bash
+      run: |
+        python -m canon init
+        if [ -f .canon/decisions.json ]; then
+          python -m canon import .canon/decisions.json --overwrite
+        fi
+    - name: Check decisions
+      shell: bash
+      run: python -m canon check ${{ inputs.extra-args }}

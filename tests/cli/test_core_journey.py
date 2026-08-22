@@ -38,6 +38,10 @@ def test_git_to_injection_journey(decision_repo: Path, monkeypatch: pytest.Monke
 
     injection = (decision_repo / ".canon" / "injection.md").read_text(encoding="utf-8")
     assert "confirmed project decisions" in injection.lower()
+    team = (decision_repo / ".canon" / "CANON.md").read_text(encoding="utf-8")
+    assert "confirmed project decisions" in team.lower()
+    assert (decision_repo / ".canon" / "decisions.json").is_file()
+    assert "BEGIN-CANON-MANAGED" in (decision_repo / "AGENTS.md").read_text(encoding="utf-8")
 
 
 def test_supersession_injection_excludes_old(

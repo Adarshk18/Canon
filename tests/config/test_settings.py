@@ -28,3 +28,15 @@ def test_merge_set_and_get(tmp_path: Path) -> None:
     updated = merge_set(settings, "injection.max_tokens", "500")
     assert updated.get("injection.max_tokens") == 500
     assert settings.injection.max_tokens != 500
+
+
+def test_new_integration_flags_default_on(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    paths = ProjectPaths.from_repo(repo)
+    loaded = load_settings(paths)
+    assert loaded.integrations.grok is True
+    assert loaded.integrations.agents_md is True
+    assert loaded.integrations.mcp is True
+    updated = merge_set(loaded, "integrations.mcp", "false")
+    assert updated.integrations.mcp is False

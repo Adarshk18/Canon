@@ -59,6 +59,14 @@ class MiningSettings:
 class IntegrationSettings:
     claude: bool = True
     cursor: bool = True
+    grok: bool = True
+    agents_md: bool = True
+    copilot: bool = True
+    gemini: bool = True
+    windsurf: bool = True
+    cline: bool = True
+    continue_ide: bool = True
+    mcp: bool = True
 
 
 @dataclass(slots=True)
@@ -93,6 +101,14 @@ class Settings:
             "[integrations]",
             f"claude = {'true' if self.integrations.claude else 'false'}",
             f"cursor = {'true' if self.integrations.cursor else 'false'}",
+            f"grok = {'true' if self.integrations.grok else 'false'}",
+            f"agents_md = {'true' if self.integrations.agents_md else 'false'}",
+            f"copilot = {'true' if self.integrations.copilot else 'false'}",
+            f"gemini = {'true' if self.integrations.gemini else 'false'}",
+            f"windsurf = {'true' if self.integrations.windsurf else 'false'}",
+            f"cline = {'true' if self.integrations.cline else 'false'}",
+            f"continue = {'true' if self.integrations.continue_ide else 'false'}",
+            f"mcp = {'true' if self.integrations.mcp else 'false'}",
             "",
             "[privacy]",
             f"telemetry = {'true' if self.privacy.telemetry else 'false'}",
@@ -126,6 +142,14 @@ class Settings:
             "integrations": {
                 "claude": self.integrations.claude,
                 "cursor": self.integrations.cursor,
+                "grok": self.integrations.grok,
+                "agents_md": self.integrations.agents_md,
+                "copilot": self.integrations.copilot,
+                "gemini": self.integrations.gemini,
+                "windsurf": self.integrations.windsurf,
+                "cline": self.integrations.cline,
+                "continue": self.integrations.continue_ide,
+                "mcp": self.integrations.mcp,
             },
             "privacy": {"telemetry": self.privacy.telemetry},
         }
@@ -165,6 +189,17 @@ def _from_mapping(data: dict[str, Any], base: Settings) -> Settings:
         integrations=IntegrationSettings(
             claude=_as_bool(integrations.get("claude"), base.integrations.claude),
             cursor=_as_bool(integrations.get("cursor"), base.integrations.cursor),
+            grok=_as_bool(integrations.get("grok"), base.integrations.grok),
+            agents_md=_as_bool(integrations.get("agents_md"), base.integrations.agents_md),
+            copilot=_as_bool(integrations.get("copilot"), base.integrations.copilot),
+            gemini=_as_bool(integrations.get("gemini"), base.integrations.gemini),
+            windsurf=_as_bool(integrations.get("windsurf"), base.integrations.windsurf),
+            cline=_as_bool(integrations.get("cline"), base.integrations.cline),
+            continue_ide=_as_bool(
+                integrations.get("continue", integrations.get("continue_ide")),
+                base.integrations.continue_ide,
+            ),
+            mcp=_as_bool(integrations.get("mcp"), base.integrations.mcp),
         ),
         privacy=PrivacySettings(
             telemetry=_as_bool(privacy.get("telemetry"), base.privacy.telemetry)

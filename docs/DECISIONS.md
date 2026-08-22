@@ -55,6 +55,16 @@ Stripe does not take open signups in India. Canon Cloud bills through Polar.sh
 so a founder in India can actually get a merchant account. The billing
 provider is swappable; the CLI never talks to Polar directly.
 
+## Vendor memory is not Canon
+
+Claude auto-memory, Cursor memories, Grok memory, and Codex/ChatGPT
+memories are agent-written notes. Official docs treat them as recall,
+not as enforced team rules. They are local, they go stale, they can
+hallucinate, and they do not keep a rejected approach rejected.
+
+Canon mines git, a human confirms, and only active decisions inject.
+Agents must not author or refresh Canon records.
+
 ## Effective range is git ancestry
 
 A decision is current only if its `effective_from` commit is already an

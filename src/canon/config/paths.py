@@ -5,8 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from canon.constants import (
+    CANON_FILENAME,
     CONFIG_FILENAME,
     DB_FILENAME,
+    DECISIONS_FILENAME,
     INJECTION_FILENAME,
     PROJECT_DIRNAME,
     TELEMETRY_FILENAME,
@@ -37,6 +39,8 @@ class ProjectPaths:
     config_file: Path
     db_file: Path
     injection_file: Path
+    canon_md_file: Path
+    decisions_file: Path
     telemetry_file: Path
 
     @classmethod
@@ -62,6 +66,8 @@ class ProjectPaths:
             config_file=config_file,
             db_file=db_file,
             injection_file=canon_dir / INJECTION_FILENAME,
+            canon_md_file=canon_dir / CANON_FILENAME,
+            decisions_file=canon_dir / DECISIONS_FILENAME,
             telemetry_file=canon_dir / TELEMETRY_FILENAME,
         )
 

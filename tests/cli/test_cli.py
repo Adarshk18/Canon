@@ -44,6 +44,10 @@ def test_command_help_pages() -> None:
         "uninstall",
         "version",
         "cloud",
+        "add",
+        "query",
+        "check",
+        "mcp",
     ):
         result = runner.invoke(app, [command, "--help"])
         assert result.exit_code == 0, result.output

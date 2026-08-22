@@ -60,6 +60,25 @@ def test_reject_keeps_record(tmp_path: Path) -> None:
     store.close()
 
 
+def test_add_manual_approve(tmp_path: Path) -> None:
+    store = Store(tmp_path / "canon.db")
+    service = DecisionService(store, NoOpTelemetry())
+    decision, superseded = service.add_manual(
+        title="Keep miner deterministic, no LLM",
+        body="Explainable candidates only.",
+        confirmed_by="dev@example.com",
+        tags=["mining"],
+        category="product",
+        at_commit="ddd444",
+        approve=True,
+    )
+    assert superseded is None
+    assert decision.status is DecisionStatus.ACTIVE
+    assert decision.source_type is SourceType.MANUAL
+    assert decision.authority == "human"
+    store.close()
+
+
 def test_duplicate_fingerprint_is_ignored(tmp_path: Path) -> None:
     store = Store(tmp_path / "canon.db")
     service = DecisionService(store, NoOpTelemetry())

@@ -62,9 +62,19 @@ Source: the original product plan (Aug 2026). The shipping product is Canon.
 - Slack / Notion connectors
 - Daily multi-project drift engine
 - Rich team dashboard
-- Deep MCP query interface
+- Rich MCP write/admin interface (stdio lookup shipped in 1.3)
 - Enterprise self-host packaging
 - Organization management / SSO
 - PostHog or remote telemetry
 
 Cloud sync, accounts, and Polar billing shipped in 1.2.0 (optional). Stripe is not used.
+
+## 1.3 global agents (this repo)
+
+| Requirement | Implementation | Tests | Status |
+| --- | --- | --- | --- |
+| Grok / AGENTS.md / Copilot / Gemini / Windsurf / Cline / Continue | `integrations/adapters.py`, `integrations/wire.py` | `tests/integrations/test_agent_files.py` | Complete |
+| Team snapshot + clone hydrate | `.canon/CANON.md`, `decisions.json` | `tests/cli/test_global_loop.py` | Complete |
+| Manual capture | `canon add` | same + service test | Complete |
+| On-demand lookup | `canon query`, `canon mcp` | `tests/cli/test_global_loop.py` | Complete |
+| Rejected-approach CI | `canon check` + GitHub Action | `tests/cli/test_global_loop.py` | Complete |

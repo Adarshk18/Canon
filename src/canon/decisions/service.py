@@ -127,6 +127,58 @@ class DecisionService:
         self.telemetry.record("suggestion_approved", {"id": updated.id})
         return updated, superseded
 
+    def add_manual(
+        self,
+        *,
+        title: str,
+        body: str,
+        confirmed_by: str,
+        tags: list[str] | None = None,
+        category: str | None = None,
+        at_commit: str | None = None,
+        approve: bool = False,
+    ) -> tuple[Decision, Decision | None]:
+        created = self.create_candidate(
+            title=title,
+            body=body,
+            source_type=SourceType.MANUAL,
+            source_commit=at_commit,
+            source_date=utcnow_iso(),
+            confidence=Confidence.HIGH,
+            tags=tags,
+            category=category,
+            evidence="manual",
+            extra={"origin": "canon add"},
+        )
+        if created is None:
+            existing = self.store.find_by_fingerprint(
+                fingerprint(
+                    source_type="manual",
+                    source_pr=None,
+                    source_commit=None,
+                    title=normalize_title(title),
+                )
+            )
+            if existing is None:
+                raise UsageError("Could not record that decision.")
+            if approve and existing.status is DecisionStatus.CANDIDATE:
+                return self.approve(
+                    existing.id or 0,
+                    confirmed_by=confirmed_by,
+                    at_commit=at_commit,
+                )
+            raise UsageError(
+                f"A decision with this title already exists "
+                f"(#{existing.id}, {existing.status.value})."
+            )
+        if approve:
+            return self.approve(
+                created.id or 0,
+                confirmed_by=confirmed_by,
+                at_commit=at_commit,
+            )
+        return created, None
+
     def reject(self, decision_id: int, *, reason: str | None = None) -> Decision:
         decision = self.store.get(decision_id)
         require_transition(decision.status, DecisionStatus.REJECTED)

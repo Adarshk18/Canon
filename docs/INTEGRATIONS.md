@@ -1,76 +1,104 @@
 # Agent integrations
 
-Research date: August 2026. Product requirements come from the source plan.
-Technical contracts come from official docs.
+Research date: August 2026. Official contracts come from vendor docs.
+Canon does **not** duplicate vendor memory. It fills the gap those
+products document themselves: agent-written notes are not team law.
 
-## Claude Code (primary)
+## What vendors already do (not Canon)
 
-Official references:
+| Tool | Native memory / rules | Who writes it | Shared with the team? | Rejected approaches |
+| --- | --- | --- | --- | --- |
+| Claude Code | `CLAUDE.md` + auto-memory (`MEMORY.md`) | You write CLAUDE.md. Claude writes auto-memory. | CLAUDE.md can be git. Auto-memory is machine-local. | No lifecycle |
+| Cursor | `.cursor/rules`, `AGENTS.md`, Team Rules | You (or the agent, if you ask) | Rules can be git. Memories are not this. | No lifecycle |
+| Grok Build | `AGENTS.md` / `.grok/rules` + experimental memory | You write rules. Grok writes `~/.grok/memory/` | Rules can be git. Memory is local and off by default. | No lifecycle |
+| Codex / ChatGPT | `AGENTS.md` + local memories | You write AGENTS.md. Codex extracts chat memories. | Docs say: keep required team guidance in AGENTS.md. Memories are a recall layer. | No lifecycle |
 
-- Hooks: https://code.claude.com/docs/en/hooks
-- Memory / CLAUDE.md: https://code.claude.com/docs/en/memory
+Claude's own memory docs: auto-memory is notes Claude writes; it is not
+enforced; it skips what it thinks git already shows. Grok SessionStart
+hooks **ignore stdout**, so a Claude-style `additionalContext` hook cannot
+inject decisions into Grok. Codex memories are generated from chats and
+stored under `~/.codex/memories/`.
 
-Chosen mechanism: **SessionStart command hook** in `.claude/settings.json`.
+None of that is: mine git → human yes/no → active/rejected/superseded →
+inject only what is currently in force, with provenance.
 
-Why this one:
+## Claude Code
 
-1. Officially supported.
-2. Runs automatically on startup, resume, clear, compact, and fork.
-3. Stdout / `additionalContext` becomes model context without the user
-   remembering to query Canon.
-4. Exec form (`command` + `args`) avoids a shell.
-5. Can be installed and removed without rewriting `CLAUDE.md`.
+Official: https://code.claude.com/docs/en/hooks
+https://code.claude.com/docs/en/memory
 
-Hook output:
+Mechanism: **SessionStart command hook** in `.claude/settings.json`
+(exec form, no shell). JSON `additionalContext`. Does not rewrite
+`CLAUDE.md`. Complementary `.claude/rules/canon.md`.
 
-```json
-{
-  "hookSpecificOutput": {
-    "hookEventName": "SessionStart",
-    "additionalContext": "# Canon — Active Project Decisions\n..."
-  }
-}
+## Cursor
+
+Official: https://cursor.com/docs/rules
+
+Mechanism: `.cursor/rules/canon.mdc` with `alwaysApply: true`, pointing at
+`.canon/CANON.md` (team) and `.canon/injection.md` (checkout-local).
+Cursor has no SessionStart hook comparable to Claude Code.
+
+Start a new Agent chat after `canon approve`.
+
+## Grok Build
+
+Official (TUI user guide): project rules load `AGENTS.md` and
+`.grok/rules/*.md`. SessionStart stdout is ignored.
+
+Mechanism:
+
+- `.grok/rules/canon.md` contains the snapshot (Grok loads the file)
+- `.grok/hooks/canon.json` runs `canon inject --refresh-files` so the
+  snapshot is current at session start
+- `AGENTS.md` managed block (Grok also reads AGENTS.md)
+
+## Codex, Copilot, Gemini, Windsurf, Cline, Continue
+
+`AGENTS.md` is the portable standard (Codex, Cursor, Copilot agent,
+Gemini, Jules, Factory, Windsurf, and others). Canon writes a managed
+block and does not delete user content outside the markers.
+
+Also:
+
+| Tool | File |
+| --- | --- |
+| GitHub Copilot | `.github/copilot-instructions.md` managed block |
+| Gemini CLI | `GEMINI.md` managed block |
+| Windsurf | `.windsurf/rules/canon.md` |
+| Cline | `.clinerules/canon.md` |
+| Continue | `.continue/rules/canon.md` |
+| Any MCP client | `.mcp.json` → `canon mcp` |
+
+ChatGPT web cannot auto-inject. Attach `.canon/CANON.md`.
+
+## Team snapshot
+
+| File | Git | Role |
+| --- | --- | --- |
+| `.canon/CANON.md` | commit | Active decisions for every agent that reads files |
+| `.canon/decisions.json` | commit | Clone hydrate + CI |
+| `.canon/injection.md` | gitignore | HEAD-filtered local snapshot |
+| `.canon/canon.db` | gitignore | Working store |
+
+`canon init` on a clone imports `decisions.json` when the database is empty.
+
+## MCP
+
+`canon mcp` is a local stdio server: `canon_list`, `canon_show`,
+`canon_query`, `canon_inject`. No network. Agents use it when the
+injected budget is too small.
+
+## GitHub Action
+
+```yaml
+- uses: Adarshk18/Canon/.github/actions/check@main
 ```
 
-Plain stdout would also work for SessionStart. JSON is used so the payload
-is structured and stays within the 10,000 character hook output cap.
-
-Complementary: `.claude/rules/canon.md` reminds Claude to treat confirmed
-decisions as authoritative. Canon does not own `CLAUDE.md`.
-
-Uninstall removes only the Canon hook and the managed rule file.
-
-## Cursor (secondary)
-
-Official reference: https://cursor.com/docs/rules
-
-Cursor project rules are `.cursor/rules/*.mdc` with frontmatter.
-`alwaysApply: true` includes the rule in every Agent session.
-Rules may `@`-reference files.
-
-Chosen mechanism:
-
-- `.cursor/rules/canon.mdc` (`alwaysApply: true`)
-- `@.canon/injection.md`
-
-Why not a hook: Cursor does not document a SessionStart hook comparable to
-Claude Code. Inventing an unsupported hook would violate the V1 rule
-“do not invent unsupported hooks”.
-
-Limitation: the snapshot is a file. Cursor picks it up on the next Agent
-session after Canon rewrites `.canon/injection.md`. Users should start a
-new chat after approving a decision.
-
-`.cursorrules` is legacy and is not written.
-
-## Shared snapshot
-
-`.canon/injection.md` is the portable injection document. Claude's hook
-builds the same text dynamically from SQLite (fresher). Cursor reads the
-file. `canon inject-preview` prints that text.
+Runs `canon check --strict` so a PR that re-adopts a rejected decision fails.
 
 ## Detection
 
-`canon init` installs Claude and Cursor integrations by default (config
-flags `integrations.claude` / `integrations.cursor`). `canon doctor`
-reports whether the managed files are present.
+`canon init` installs every integration that is enabled in
+`[integrations]` (all on by default). `canon doctor` reports each one.
+`canon uninstall` removes only Canon-managed blocks and files.
